@@ -1,0 +1,9 @@
+{
+    "OUDistinguishedName": "The DN of the OU containing the group for accounts to be joined to. ex: OU=MYOU,DC=My,DC=Domain",
+    "ServiceAccountSamAccountName": "SAM Account Name of the strong account. ex: svc_strong",  
+    "GroupName": "Name of the privileged group to join the ephemeral user to. ex: grp_a",
+    "DomainDN": "DN of your domain. ex: DC=your,DC=domain",
+    "DomainAdminsGroup": "Name of the Domain Admins group, which will be blocked from managing group membership. ex: Domain Admins",
+    "EnterpriseAdminsGroup": "Name of the Enterprise Admins group, which will be allowed to manage the group membership in break-glass scenarios. Ex: Enterprise Admins"
+}
+
