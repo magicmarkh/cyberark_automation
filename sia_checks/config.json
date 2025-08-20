@@ -1,0 +1,4 @@
+{
+    "tenant_name": "your-tenant-name",
+    "aws_region": "us-east-1"
+}
