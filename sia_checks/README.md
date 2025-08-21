@@ -1,10 +1,15 @@
 # CyberArk Secure Infrastructure Access (SIA) Network Connectivity Checker
 
-This PowerShell script validates network connectivity to the CyberArk SaaS platform and ensures proper network configuration according to CyberArk Secure Infrastructure Access documentation. The script tests connectivity to required endpoints and detects potential issues with packet inspection, SSL termination, or other network security tools that may interfere with CyberArk SIA functionality.
+This repository contains network connectivity validation tools for the CyberArk SaaS platform, ensuring proper network configuration according to CyberArk Secure Infrastructure Access documentation. The tools test connectivity to required endpoints and detect potential issues with packet inspection, SSL termination, or other network security tools that may interfere with CyberArk SIA functionality.
+
+## Available Versions
+
+- **Windows PowerShell**: `NetworkCheck.ps1` - For Windows environments
+- **Linux Python**: `network_check.py` - For Linux environments (RHEL, Ubuntu, Amazon Linux)
 
 ## What It Does
 
-The script performs comprehensive network validation for CyberArk SaaS connectivity by:
+Both scripts perform comprehensive network validation for CyberArk SaaS connectivity by:
 
 - **Testing TCP Connectivity**: Validates that required ports (443) are accessible to CyberArk endpoints
 - **Detecting Packet Inspection**: Identifies corporate firewalls, proxy servers, or network security tools that may interfere with encrypted communication
@@ -23,7 +28,7 @@ The script validates connectivity to the following CyberArk and AWS services:
 
 ### Packet Inspection Detection
 
-The script employs multiple detection methods to identify network interference:
+Both scripts employ multiple detection methods to identify network interference:
 
 - **Certificate Authority Analysis**: Detects corporate/proxy certificates from known security vendors
 - **HTTP Header Inspection**: Identifies headers injected by network security tools
@@ -45,9 +50,41 @@ Supported detection for these network security tools:
 
 ## Prerequisites
 
+### Windows (PowerShell)
 - **PowerShell 5.1 or higher**
 - **Network connectivity** to internet endpoints
-- **Administrator privileges** (recommended for comprehensive testing)
+- **Regular user privileges** (no admin rights required)
+
+### Linux (Python)
+- **Python 3.6 or higher**
+- **Required Python packages**:
+  - `requests` 
+  - `urllib3`
+- **Network connectivity** to internet endpoints
+- **Regular user privileges** (no sudo required)
+
+#### Installing Python Dependencies
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install python3-requests python3-urllib3
+```
+
+**RHEL/CentOS/Amazon Linux:**
+```bash
+sudo yum install python3-requests python3-urllib3
+# Or on newer versions:
+sudo dnf install python3-requests python3-urllib3
+```
+
+**Using pip:**
+```bash
+pip3 install requests
+# urllib3 is included with requests
+```
+
+The Python script will automatically check for missing dependencies and provide installation instructions if any are missing.
 
 ## Configuration
 
@@ -82,13 +119,15 @@ Before running the script, configure the `config.json` file with your CyberArk e
 
 ## Usage
 
-### Basic Usage
+### Windows PowerShell
+
+#### Basic Usage
 
 ```powershell
 .\NetworkCheck.ps1
 ```
 
-### Advanced Usage
+#### Advanced Usage
 
 ```powershell
 # Use custom configuration file
@@ -101,34 +140,85 @@ Before running the script, configure the `config.json` file with your CyberArk e
 .\NetworkCheck.ps1 -ConfigPath "prod-config.json" -LogPath "prod-test.log"
 ```
 
+### Linux Python
+
+#### Basic Usage
+
+```bash
+python3 network_check.py
+```
+
+#### Advanced Usage
+
+```bash
+# Use custom configuration file
+python3 network_check.py --config production-config.json
+
+# Specify custom log file location  
+python3 network_check.py --log /var/log/cyberark-connectivity.log
+
+# Use both custom config and log paths
+python3 network_check.py -c prod-config.json -l prod-test.log
+
+# Make executable and run directly
+chmod +x network_check.py
+./network_check.py
+```
+
 ### Parameters
 
+#### PowerShell Parameters
 | Parameter | Description | Default | Required |
 |-----------|-------------|---------|----------|
 | `-ConfigPath` | Path to JSON configuration file | `config.json` | No |
 | `-LogPath` | Path to output log file | `endpoint_test.log` | No |
 
+#### Python Parameters  
+| Parameter | Description | Default | Required |
+|-----------|-------------|---------|----------|
+| `--config`, `-c` | Path to JSON configuration file | `config.json` | No |
+| `--log`, `-l` | Path to output log file | `endpoint_test.log` | No |
+
+
 ## Output and Results
 
 ### Console Output
 
-The script provides real-time feedback with color-coded messages:
+Both scripts provide real-time feedback with color-coded messages:
 - 🟢 **Green**: Successful connections and passed tests
 - 🟡 **Yellow**: Warnings and detected issues
 - 🔴 **Red**: Failures and critical problems
 - ⚪ **White**: Informational messages
 
-### Results Table
+### Dependency Check (Python Only)
 
-After testing, the script displays a comprehensive results table:
+The Python script will automatically check for required dependencies on startup:
 
 ```
-Endpoint                                               Status TCP  PacketInspection InspectionTool FailureReason
---------                                               ------ ---  ---------------- -------------- -------------
-https://s3.amazonaws.com                              PASS   Pass None             None          
-https://s3.us-east-1.amazonaws.com                    PASS   Pass None             None          
-https://mycompany.cyberark.cloud                      PASS   Pass None             None          
-https://a2m4b3cupk8nzj-ats.iot.us-east-1.amazonaws.com PASS   Pass None             None          
+ERROR: Missing required Python packages
+Missing packages: requests
+
+Ubuntu/Debian:
+  sudo apt-get install python3-requests
+
+RHEL/CentOS/Amazon Linux:
+  sudo yum install python3-requests
+
+Using pip:
+  pip3 install requests
+```
+
+### Results Table
+
+After testing, both scripts display a comprehensive results table:
+
+```
+Endpoint                                               | Status | TCP  | PacketInspection | InspectionTool | FailureReason
+------------------------------------------------------ | ------ | ---- | ---------------- | -------------- | -------------
+https://s3.amazonaws.com                              | PASS   | Pass | None             | None           |              
+https://s3.us-east-1.amazonaws.com                    | PASS   | Pass | None             | None           |              
+https://mycompany.cyberark.cloud                      | PASS   | Pass | None             | None           |              
+https://a2m4b3cupk8nzj-ats.iot.us-east-1.amazonaws.com | PASS   | Pass | None             | None           |              
 ```
 
 ### Log File
@@ -167,7 +257,7 @@ All test results are logged to the specified log file with timestamps for audit 
 
 1. **"Configuration file not found"**
    - Ensure `config.json` exists in the script directory
-   - Verify the path if using `-ConfigPath` parameter
+   - Verify the path if using custom config parameter
 
 2. **"TCP port 443 not reachable"**
    - Check firewall rules
@@ -179,16 +269,35 @@ All test results are logged to the specified log file with timestamps for audit 
    - Configure security tools to bypass CyberArk traffic
    - Consult with network security team
 
+4. **"Missing required Python packages" (Linux only)**
+   - Install missing packages using provided commands
+   - Ensure Python 3.6+ is installed
+   - Check package manager repositories are accessible
+
 ### Debug Mode
 
 For additional troubleshooting information, examine the log file for detailed connection attempts and error messages.
 
+### Platform-Specific Notes
+
+**Windows PowerShell:**
+- Uses native .NET networking classes for SSL/TLS analysis
+- Requires Windows PowerShell 5.1+ or PowerShell Core
+- May require execution policy adjustment: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+
+**Linux Python:**
+- Uses Python's `ssl`, `socket`, and `requests` libraries
+- Automatically disables SSL warnings for inspection analysis
+- Compatible with Python 3.6+ on most Linux distributions
+- Can be run as a regular user (no sudo required)
+
 ## Security Considerations
 
-- The script does not transmit sensitive data
+- Both scripts do not transmit sensitive data
 - All tests use standard HTTPS connectivity checks
 - Certificate information is analyzed locally
 - No authentication credentials are required or stored
+- Scripts can be run with regular user privileges (no admin rights required for either version)
 
 ## Support
 
@@ -199,15 +308,32 @@ For CyberArk SIA-specific network requirements, consult:
 
 ## Exit Codes
 
+Both scripts use the same exit codes:
 - **0**: All tests passed successfully
 - **1**: One or more tests failed or packet inspection detected
 
 ## Version Requirements
 
+**Windows PowerShell:**
 - PowerShell 5.1+ (specified in script header)
 - Windows PowerShell or PowerShell Core
 - .NET Framework (for SSL/TLS operations)
 
+**Linux Python:**
+- Python 3.6 or higher
+- Standard library modules: `ssl`, `socket`, `json`, `logging`, `urllib.parse`
+- Third-party packages: `requests`, `urllib3`
+
+## File Structure
+
+```
+cyberark-sia-checker/
+├── README.md
+├── config.json
+├── NetworkCheck.ps1          # Windows PowerShell version
+└── network_check.py           # Linux Python version
+```
+
 ---
 
-*This script is designed to validate CyberArk SaaS connectivity requirements. Ensure you have appropriate permissions to run network tests in your environment.*
+*These scripts are designed to validate CyberArk SaaS connectivity requirements across Windows and Linux environments. Ensure you have appropriate permissions to run network tests in your environment.*
