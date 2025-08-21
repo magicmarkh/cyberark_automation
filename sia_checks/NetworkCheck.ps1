@@ -11,9 +11,9 @@
 .PARAMETER LogPath
     Path to the log file (default: endpoint_test.log)
 .EXAMPLE
-    .\Test-NetworkEndpoints.ps1
+    .\NetworkCheck.ps1
 .EXAMPLE
-    .\Test-NetworkEndpoints.ps1 -ConfigPath "custom-config.json" -LogPath "custom.log"
+    .\NetworkCheck.ps1 -ConfigPath "custom-config.json" -LogPath "custom.log"
 #>
 
 param(
@@ -137,7 +137,7 @@ function Test-PacketInspection {
             }
         }
         
-        # Method 2: HTTP Header Analysis - Check for inspection tool headers
+        # Method 2: HTTP Header Analysis - Check for inspection tool headers (improved)
         Write-LogMessage "Analyzing HTTP headers for $Hostname" "INFO"
         try {
             $headers = @{}
@@ -161,7 +161,7 @@ function Test-PacketInspection {
                 }
             }
             
-            # Check for known inspection tool headers
+            # Check for known inspection tool headers (more specific to avoid false positives)
             $inspectionHeaders = @{
                 "X-Zscaler-" = "Zscaler"
                 "X-BlueCoat-" = "BlueCoat"
@@ -174,14 +174,31 @@ function Test-PacketInspection {
                 "X-Check-Point-" = "Check Point"
                 "X-Websense-" = "Websense"
                 "X-Cisco-" = "Cisco"
-                "X-Proxy-" = "Generic Proxy"
-                "X-Forwarded-" = "Proxy/Load Balancer"
-                "Via" = "Proxy"
+                "X-Proxy-Connection" = "Generic Proxy"
+                "X-Corporate-" = "Corporate Proxy"
             }
             
             foreach ($header in $headers.AllKeys) {
                 foreach ($pattern in $inspectionHeaders.Keys) {
                     if ($header -match $pattern) {
+                        # Special check for Via headers - ignore legitimate CDNs
+                        if ($header -eq "Via") {
+                            $viaValue = $headers[$header]
+                            if ($viaValue -match "(cloudfront|cloudflare|fastly|akamai)") {
+                                Write-LogMessage "Legitimate CDN Via header detected: $viaValue" "INFO"
+                                continue
+                            }
+                        }
+                        
+                        # Special check for X-Forwarded headers from legitimate sources
+                        if ($header -match "X-Forwarded-") {
+                            $forwardedValue = $headers[$header]
+                            if ($forwardedValue -match "(aws|amazon|cloudfront)") {
+                                Write-LogMessage "Legitimate load balancer header detected: $header" "INFO"
+                                continue
+                            }
+                        }
+                        
                         $inspectionResult.SuspiciousHeaders = $true
                         $inspectionResult.NetworkInterception = $true
                         $inspectionResult.InspectionTool = $inspectionHeaders[$pattern]
